@@ -1,0 +1,17 @@
+.git
+.gitignore
+.vscode
+.venv
+frontend/
+nginx/
+k8s/
+tests/
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+*.sqlite3
+db/
+README.md
+LICENSE
+*.lock
