@@ -339,6 +339,21 @@ k3d cluster delete guess-game
 ```
 ---
 
+# Requisitos Atendidos
+
+| Requisito | Status |
+|-|-|
+| Kubernetes utilizando k3d | ✔ |
+| Aplicação migrada do Docker para Kubernetes | ✔ |
+| Imagens disponíveis no Docker Hub | ✔ |
+| Frontend acessível diretamente | ✔ |
+| NodePort implementado | ✔ |
+| Backend com HPA | ✔ |
+| PostgreSQL com persistência | ✔ |
+| Manifestos dentro da pasta /k8s | ✔ |
+
+---
+
 # Autor
 
 Vitor Rodrigues
