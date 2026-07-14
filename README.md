@@ -1,385 +1,340 @@
-Guess Game - Kubernetes (k3d)
-Descrição
+# Guess Game - Kubernetes (k3d)
 
-Este projeto consiste na reimplementação da aplicação Guess Game, originalmente desenvolvida utilizando Docker Compose, agora utilizando conceitos de Kubernetes através do k3d (K3s dentro de Docker).
+## Descrição
+
+Este projeto consiste na migração da aplicação **Guess Game** desenvolvida na atividade anterior utilizando Docker Compose para uma arquitetura baseada em **Kubernetes utilizando k3d**.
 
 A aplicação é composta por:
 
-Backend Flask (Python)
-Banco de dados PostgreSQL
-Frontend React
-NGINX como servidor web e proxy reverso
+- Backend Flask (Python)
+- Frontend React servido pelo NGINX
+- Banco PostgreSQL
+- Kubernetes para gerenciamento dos containers
+- HPA para escalabilidade automática do backend
 
-Nesta versão, a orquestração dos containers foi migrada do Docker Compose para Kubernetes, utilizando:
+As imagens Docker estão disponíveis no Docker Hub, portanto não é necessário realizar o build das imagens para executar o projeto.
 
-Deployments
-Services
-PersistentVolumeClaim (PVC)
-Horizontal Pod Autoscaler (HPA)
-NodePort
-Imagens hospedadas no Docker Hub
+---
 
-O objetivo desta atividade foi aplicar conceitos de Kubernetes para disponibilização, escalabilidade e gerenciamento de uma aplicação distribuída.
+# Arquitetura
 
-Arquitetura da Solução
+```text
+Usuário
+   |
+   |
+NodePort / Port-forward
+   |
+   |
+Frontend React + NGINX
+   |
+   |
+Service Backend
+   |
+   |
+Backend Flask (Pods)
+   |
+   |
+PostgreSQL
+   |
+   |
+Persistent Volume
+```
 
-A arquitetura Kubernetes é composta pelos seguintes componentes:
+---
 
-                 Usuário
-                    |
-                    |
-              NodePort 30080
-                    |
-                    |
-              Frontend React
-              (NGINX)
-                    |
-                    |
-              Service Backend
-                    |
-          ---------------------
-          |                   |
-      Backend Pod        Backend Pod
-          |                   |
-          |                   |
-          ---- HPA controla ---
-                    |
-                    |
-            PostgreSQL Service
-                    |
-                    |
-             PostgreSQL Pod
-                    |
-                    |
-                 PVC
-Componentes Kubernetes Utilizados
-Cluster Kubernetes
+# Tecnologias Utilizadas
 
-O ambiente Kubernetes foi criado utilizando:
+- Kubernetes
+- k3d
+- Docker
+- Docker Hub
+- Flask
+- React
+- NGINX
+- PostgreSQL
 
-k3d
-k3s
-Docker Desktop
+---
 
-O k3d executa um cluster Kubernetes leve utilizando containers Docker.
+# Imagens Docker
 
-Versões utilizadas:
+As imagens utilizadas pelo Kubernetes estão publicadas no Docker Hub:
 
-k3d version
+Backend:
 
-k3d version v5.9.0
+```text
+vitorrodrigues3794/guess-game-backend:latest
+```
 
-k3s version v1.35.5-k3s1
-Estrutura do Projeto
-Guess_Game_at2_Kubernetes
+Frontend:
 
-├── backend/
-├── frontend/
-├── nginx/
-├── k8s/
-│
-│── postgres/
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   └── pvc.yaml
-│
-│── backend/
+```text
+vitorrodrigues3794/guess-game-frontend:latest
+```
+
+---
+
+# Estrutura Kubernetes
+
+Os manifestos Kubernetes estão disponíveis no diretório:
+
+```text
+/k8s
+```
+
+Estrutura:
+
+```text
+k8s
+├── backend
 │   ├── deployment.yaml
 │   ├── service.yaml
 │   └── hpa.yaml
 │
-│── frontend/
+├── frontend
 │   ├── deployment.yaml
 │   └── service.yaml
 │
-├── Dockerfile
-├── docker-compose.yml
-├── README.md
-└── requirements.txt
-Imagens Docker
+└── postgres
+    ├── deployment.yaml
+    ├── service.yaml
+    └── pvc.yaml
+```
 
-As imagens utilizadas pelo Kubernetes foram previamente construídas e publicadas no Docker Hub.
+---
 
-Dessa forma, não é necessário reconstruir nenhuma imagem durante a execução.
+# Pré-requisitos
 
-Backend
+Instalar:
 
-Imagem:
+- Docker
+- kubectl
+- k3d
 
-vitorrodrigues3794/guess-game-backend:latest
 
-Docker Hub:
+Verificar:
 
-https://hub.docker.com/r/vitorrodrigues3794/guess-game-backend
-
-Frontend
-
-Imagem:
-
-vitorrodrigues3794/guess-game-frontend:latest
-
-Docker Hub:
-
-https://hub.docker.com/r/vitorrodrigues3794/guess-game-frontend
-
-Pré-requisitos
-
-É necessário possuir instalado:
-
-Docker Desktop
-kubectl
-k3d
-
-Verificar instalações:
-
+```bash
 docker --version
 
 kubectl version --client
 
 k3d version
-Criando o Cluster Kubernetes
+```
 
-Criar o cluster:
+---
 
+# Criar Cluster Kubernetes
+
+Criar o cluster k3d:
+
+```bash
 k3d cluster create guess-game
+```
 
 Validar:
 
-kubectl cluster-info
-
-Verificar nodes:
-
+```bash
 kubectl get nodes
+```
 
 Resultado esperado:
 
-NAME                       STATUS
-k3d-guess-game-server-0    Ready
-Implantação da Aplicação
+```text
+k3d-guess-game-server-0   Ready
+```
 
-Todos os manifestos Kubernetes estão localizados no diretório:
+---
 
-/k8s
-1 - Banco PostgreSQL
+# Deploy da Aplicação
+
+## PostgreSQL
 
 Aplicar os manifestos:
 
+```bash
 kubectl apply -f k8s/postgres/
+```
 
-Verificar:
+Validar:
 
+```bash
 kubectl get pods
-
-Resultado esperado:
-
-postgres-xxxx   Running
-Persistência do Banco
-
-O PostgreSQL utiliza um PersistentVolumeClaim:
-
-Arquivo:
-
-k8s/postgres/pvc.yaml
-
-Configuração:
-
-storage: 5Gi
-
-Verificar:
-
 kubectl get pvc
+```
 
-Resultado esperado:
+O PVC deve estar:
 
-postgres-pvc   Bound
-2 - Backend Flask
+```text
+STATUS: Bound
+```
 
-Aplicação do backend:
+---
 
+## Backend
+
+Aplicar:
+
+```bash
 kubectl apply -f k8s/backend/
+```
 
-Verificar:
+Validar:
 
+```bash
 kubectl get pods
+```
 
-Exemplo:
+O backend deve possuir inicialmente 2 Pods.
 
-backend-xxxx   Running
-backend-yyyy   Running
-Configuração do Banco
+---
 
-O backend utiliza as variáveis:
+## Frontend
 
-FLASK_DB_TYPE=postgres
+Aplicar:
 
-FLASK_DB_USER=postgres
-
-FLASK_DB_PASSWORD=secretpass
-
-FLASK_DB_NAME=postgres
-
-FLASK_DB_HOST=postgres
-
-FLASK_DB_PORT=5432
-
-O endereço do banco é resolvido pelo Service Kubernetes:
-
-postgres:5432
-Escalabilidade Automática do Backend (HPA)
-
-Foi implementado Horizontal Pod Autoscaler.
-
-Arquivo:
-
-k8s/backend/hpa.yaml
-
-Configuração:
-
-Mínimo de pods: 2
-
-Máximo de pods: 5
-
-CPU alvo: 70%
-
-Verificar:
-
-kubectl get hpa
-
-Exemplo:
-
-NAME          TARGETS      MINPODS MAXPODS
-backend-hpa   13%/70%       2       5
-Teste de Escalabilidade
-
-Durante teste de carga:
-
-CPU: 253%
-
-O Kubernetes aumentou automaticamente:
-
-2 pods → 5 pods
-
-Após redução da carga:
-
-5 pods → 2 pods
-
-Demonstrando funcionamento do HPA.
-
-3 - Frontend React
-
-Aplicação:
-
+```bash
 kubectl apply -f k8s/frontend/
+```
 
-Verificar:
+Validar:
 
+```bash
 kubectl get pods
+kubectl get svc
+```
 
-Resultado esperado:
+---
 
-frontend-xxxx Running
-Exposição do Frontend
+# Acesso ao Sistema
 
-O frontend foi disponibilizado utilizando:
-
-NodePort
-
-Service:
-
-frontend
-
-Porta:
-
-30080
+O frontend está configurado utilizando NodePort.
 
 Verificar:
 
-kubectl get svc
+```bash
+kubectl get svc frontend
+```
 
-Resultado:
+Exemplo:
 
-frontend NodePort 80:30080
-Acesso à Aplicação
-Opção 1 - Port Forward
+```text
+frontend   NodePort   80:30080/TCP
+```
 
-Executar:
+Caso esteja utilizando k3d, acessar utilizando:
 
+```bash
 kubectl port-forward service/frontend 8080:80
+```
 
-Acessar:
+Abrir no navegador:
 
+```
 http://localhost:8080
-Opção 2 - NodePort
+```
 
-Acessar:
+---
 
-http://localhost:30080
-Utilização do Sistema
-Criar jogo
+# Teste da Aplicação
 
-Acesse:
+1. Acessar o frontend.
+2. Criar um novo jogo.
+3. Informar uma senha.
+4. Utilizar o Game ID gerado para realizar tentativas.
 
-http://localhost:8080
+---
 
-Clique:
+# Banco de Dados
 
-Create Game
+Acessar o PostgreSQL:
 
-Informe uma senha.
-
-O sistema retornará:
-
-Game ID
-Realizar tentativa
-
-Utilize o Game ID gerado para tentar descobrir a senha.
-
-Consulta ao Banco PostgreSQL
-
-Entrar no container:
-
-kubectl exec -it deployment/postgres -- psql -U postgres -d postgres
+```bash
+kubectl exec -it deployment/postgres -- \
+psql -U postgres -d postgres
+```
 
 Listar tabelas:
 
+```sql
 \dt
+```
 
 Consultar jogos:
 
+```sql
 SELECT * FROM game;
+```
 
 Sair:
 
+```sql
 \q
-Monitoramento
-Pods
+```
+
+---
+
+# Auto Scaling (HPA)
+
+O backend possui Horizontal Pod Autoscaler configurado.
+
+Configuração:
+
+```text
+Mínimo de Pods: 2
+Máximo de Pods: 5
+CPU alvo: 70%
+```
+
+Verificar:
+
+```bash
+kubectl get hpa
+```
+
+Exemplo:
+
+```text
+NAME          REFERENCE            TARGETS
+backend-hpa   Deployment/backend   cpu: 20%/70%
+```
+
+Durante aumento de carga, o Kubernetes cria novos Pods automaticamente.
+
+---
+
+# Comandos Úteis
+
+Ver todos os Pods:
+
+```bash
 kubectl get pods
-Serviços
+```
+
+Ver serviços:
+
+```bash
 kubectl get svc
-Recursos
+```
+
+Ver consumo:
+
+```bash
 kubectl top pods
-Logs
+```
 
-Backend:
+Remover aplicação:
 
-kubectl logs deployment/backend
+```bash
+kubectl delete -f k8s/
+```
 
-Frontend:
+Remover cluster:
 
-kubectl logs deployment/frontend
-Benefícios da Migração para Kubernetes
-Escalabilidade
+```bash
+k3d cluster delete guess-game
+```
+---
 
-O backend pode aumentar ou reduzir automaticamente conforme utilização.
+# Autor
 
-Alta disponibilidade
-
-Múltiplas réplicas do backend permitem continuidade do serviço.
-
-Gerenciamento declarativo
-
-Toda infraestrutura está descrita em YAML.
-
-Portabilidade
-
-O sistema pode ser executado em qualquer cluster Kubernetes compatível.
+Vitor Rodrigues
