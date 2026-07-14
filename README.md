@@ -357,3 +357,5 @@ k3d cluster delete guess-game
 # Autor
 
 Vitor Rodrigues
+Projeto desenvolvido para a atividade 2 de Kubernetes utilizando o projeto Guess Game.
+
