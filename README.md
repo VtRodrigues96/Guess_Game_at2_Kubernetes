@@ -1,157 +1,385 @@
-Aqui está um exemplo de um arquivo `README.md` para o seu jogo:
+Guess Game - Kubernetes (k3d)
+Descrição
 
----
+Este projeto consiste na reimplementação da aplicação Guess Game, originalmente desenvolvida utilizando Docker Compose, agora utilizando conceitos de Kubernetes através do k3d (K3s dentro de Docker).
 
-# Jogo de Adivinhação com Flask
+A aplicação é composta por:
 
-Este é um simples jogo de adivinhação desenvolvido utilizando o framework Flask. O jogador deve adivinhar uma senha criada aleatoriamente, e o sistema fornecerá feedback sobre o número de letras corretas e suas respectivas posições.
+Backend Flask (Python)
+Banco de dados PostgreSQL
+Frontend React
+NGINX como servidor web e proxy reverso
 
-## Funcionalidades
+Nesta versão, a orquestração dos containers foi migrada do Docker Compose para Kubernetes, utilizando:
 
-- Criação de um novo jogo com uma senha fornecida pelo usuário.
-- Adivinhe a senha e receba feedback se as letras estão corretas e/ou em posições corretas.
-- As senhas são armazenadas  utilizando base64.
-- As adivinhações incorretas retornam uma mensagem com dicas.
-  
-## Requisitos
+Deployments
+Services
+PersistentVolumeClaim (PVC)
+Horizontal Pod Autoscaler (HPA)
+NodePort
+Imagens hospedadas no Docker Hub
 
-- Python 3.8+ - 3.12
-- Flask
-- Um banco de dados local (ou um mecanismo de armazenamento configurado em `current_app.db`)
-- node 18.17.0
+O objetivo desta atividade foi aplicar conceitos de Kubernetes para disponibilização, escalabilidade e gerenciamento de uma aplicação distribuída.
 
-## Instalação
+Arquitetura da Solução
 
-1. Clone o repositório:
+A arquitetura Kubernetes é composta pelos seguintes componentes:
 
-   ```bash
-   git clone https://github.com/fams/guess_game.git
-   cd guess-game
-   ```
+                 Usuário
+                    |
+                    |
+              NodePort 30080
+                    |
+                    |
+              Frontend React
+              (NGINX)
+                    |
+                    |
+              Service Backend
+                    |
+          ---------------------
+          |                   |
+      Backend Pod        Backend Pod
+          |                   |
+          |                   |
+          ---- HPA controla ---
+                    |
+                    |
+            PostgreSQL Service
+                    |
+                    |
+             PostgreSQL Pod
+                    |
+                    |
+                 PVC
+Componentes Kubernetes Utilizados
+Cluster Kubernetes
 
-2. Crie um ambiente virtual e ative-o:
+O ambiente Kubernetes foi criado utilizando:
 
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   venv\Scripts\activate  # Windows
-   ```
+k3d
+k3s
+Docker Desktop
 
-3. Instale as dependências:
+O k3d executa um cluster Kubernetes leve utilizando containers Docker.
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Versões utilizadas:
 
-4. Configure o banco de dados com as variáveis de ambiente no arquivo start-backend.sh
-    1. Para sqlite
+k3d version
 
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="sqlite"            # Use SQLITE
-            export FLASK_DB_PATH="caminho/db.sqlite" # caminho do banco
-        ```
+k3d version v5.9.0
 
-    2. Para Postgres
+k3s version v1.35.5-k3s1
+Estrutura do Projeto
+Guess_Game_at2_Kubernetes
 
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="postgres"       # Use postgres
-            export FLASK_DB_USER="postgres"       # Usuário do banco
-            export FLASK_DB_NAME="postgres"       # Nome do Banco
-            export FLASK_DB_PASSWORD="secretpass" # Senha do banco
-            export FLASK_DB_HOST="localhost"      # Hostname
-            export FLASK_DB_PORT="5432"           # Porta
-        ```
+├── backend/
+├── frontend/
+├── nginx/
+├── k8s/
+│
+│── postgres/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── pvc.yaml
+│
+│── backend/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── hpa.yaml
+│
+│── frontend/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── Dockerfile
+├── docker-compose.yml
+├── README.md
+└── requirements.txt
+Imagens Docker
 
-    3. Para DynamoDB
+As imagens utilizadas pelo Kubernetes foram previamente construídas e publicadas no Docker Hub.
 
-        ```bash
-        export FLASK_APP="run.py"
-        export FLASK_DB_TYPE="dynamodb"       # Use postgres
-        export AWS_DEFAULT_REGION="us-east-1" # AWS region
-        export AWS_ACCESS_KEY_ID="FAKEACCESSKEY123456" 
-        export AWS_SECRET_ACCESS_KEY="FakeSecretAccessKey987654321"
-        export AWS_SESSION_TOKEN="FakeSessionTokenABCDEFGHIJKLMNOPQRSTUVXYZ1234567890"
-        ```
+Dessa forma, não é necessário reconstruir nenhuma imagem durante a execução.
 
-5. Execute o backend
+Backend
 
-   ```bash
-   ./start-backend.sh &
-   ```
+Imagem:
 
-6. Cuidado! verifique se o seu linux está lendo o arquivo .sh com fim de linha do windows CRLF. Para verificar utilize o vim -b start-backend.sh
+vitorrodrigues3794/guess-game-backend:latest
 
-## Frontend
-No diretorio de frontend
+Docker Hub:
 
-1. Instale o node com o nvm. Se não tiver o nvm instalado, siga o [tutorial](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
+https://hub.docker.com/r/vitorrodrigues3794/guess-game-backend
 
-    ```bash
-    nvm install 18.17.0
-    nvm use 18.17.0
-    # Habilite o yarn
-    corepack enable
-    ```
+Frontend
 
-2. Instale as dependências do node com o npm:
+Imagem:
 
-    ```bash
-    npm install
-    ```
+vitorrodrigues3794/guess-game-frontend:latest
 
-3. Exporte a url onde está executando o backend e execute o backend.
+Docker Hub:
 
-   ```bash
-    export REACT_APP_BACKEND_URL=http://localhost:5000
-    yarn start
-   ```
+https://hub.docker.com/r/vitorrodrigues3794/guess-game-frontend
 
-## Como Jogar
+Pré-requisitos
 
-### 1. Criar um novo jogo
+É necessário possuir instalado:
 
-Acesse a url do frontend http://localhost:3000
+Docker Desktop
+kubectl
+k3d
 
-Digite uma frase secreta
+Verificar instalações:
 
-Envie
+docker --version
 
-Salve o game-id
+kubectl version --client
 
+k3d version
+Criando o Cluster Kubernetes
 
-### 2. Adivinhar a senha
+Criar o cluster:
 
-Acesse a url do frontend http://localhost:3000
+k3d cluster create guess-game
 
-Vá para o endponint breaker
+Validar:
 
-entre com o game_id que foi gerado pelo Creator
+kubectl cluster-info
 
-Tente adivinhar
+Verificar nodes:
 
-## Estrutura do Código
+kubectl get nodes
 
-### Rotas:
+Resultado esperado:
 
-- **`/create`**: Cria um novo jogo. Armazena a senha codificada em base64 e retorna um `game_id`.
-- **`/guess/<game_id>`**: Permite ao usuário adivinhar a senha. Compara a adivinhação com a senha armazenada e retorna o resultado.
+NAME                       STATUS
+k3d-guess-game-server-0    Ready
+Implantação da Aplicação
 
-### Classes Importantes:
+Todos os manifestos Kubernetes estão localizados no diretório:
 
-- **`Guess`**: Classe responsável por gerenciar a lógica de comparação entre a senha e a tentativa do jogador.
-- **`WrongAttempt`**: Exceção personalizada que é levantada quando a tentativa está incorreta.
+/k8s
+1 - Banco PostgreSQL
 
+Aplicar os manifestos:
 
+kubectl apply -f k8s/postgres/
 
-## Melhorias Futuras
+Verificar:
 
-- Implementar autenticação de usuário para salvar e carregar jogos.
-- Adicionar limite de tentativas.
-- Melhorar a interface de feedback para as tentativas de adivinhação.
+kubectl get pods
 
-## Licença
+Resultado esperado:
 
-Este projeto está licenciado sob a [MIT License](LICENSE).
+postgres-xxxx   Running
+Persistência do Banco
 
+O PostgreSQL utiliza um PersistentVolumeClaim:
+
+Arquivo:
+
+k8s/postgres/pvc.yaml
+
+Configuração:
+
+storage: 5Gi
+
+Verificar:
+
+kubectl get pvc
+
+Resultado esperado:
+
+postgres-pvc   Bound
+2 - Backend Flask
+
+Aplicação do backend:
+
+kubectl apply -f k8s/backend/
+
+Verificar:
+
+kubectl get pods
+
+Exemplo:
+
+backend-xxxx   Running
+backend-yyyy   Running
+Configuração do Banco
+
+O backend utiliza as variáveis:
+
+FLASK_DB_TYPE=postgres
+
+FLASK_DB_USER=postgres
+
+FLASK_DB_PASSWORD=secretpass
+
+FLASK_DB_NAME=postgres
+
+FLASK_DB_HOST=postgres
+
+FLASK_DB_PORT=5432
+
+O endereço do banco é resolvido pelo Service Kubernetes:
+
+postgres:5432
+Escalabilidade Automática do Backend (HPA)
+
+Foi implementado Horizontal Pod Autoscaler.
+
+Arquivo:
+
+k8s/backend/hpa.yaml
+
+Configuração:
+
+Mínimo de pods: 2
+
+Máximo de pods: 5
+
+CPU alvo: 70%
+
+Verificar:
+
+kubectl get hpa
+
+Exemplo:
+
+NAME          TARGETS      MINPODS MAXPODS
+backend-hpa   13%/70%       2       5
+Teste de Escalabilidade
+
+Durante teste de carga:
+
+CPU: 253%
+
+O Kubernetes aumentou automaticamente:
+
+2 pods → 5 pods
+
+Após redução da carga:
+
+5 pods → 2 pods
+
+Demonstrando funcionamento do HPA.
+
+3 - Frontend React
+
+Aplicação:
+
+kubectl apply -f k8s/frontend/
+
+Verificar:
+
+kubectl get pods
+
+Resultado esperado:
+
+frontend-xxxx Running
+Exposição do Frontend
+
+O frontend foi disponibilizado utilizando:
+
+NodePort
+
+Service:
+
+frontend
+
+Porta:
+
+30080
+
+Verificar:
+
+kubectl get svc
+
+Resultado:
+
+frontend NodePort 80:30080
+Acesso à Aplicação
+Opção 1 - Port Forward
+
+Executar:
+
+kubectl port-forward service/frontend 8080:80
+
+Acessar:
+
+http://localhost:8080
+Opção 2 - NodePort
+
+Acessar:
+
+http://localhost:30080
+Utilização do Sistema
+Criar jogo
+
+Acesse:
+
+http://localhost:8080
+
+Clique:
+
+Create Game
+
+Informe uma senha.
+
+O sistema retornará:
+
+Game ID
+Realizar tentativa
+
+Utilize o Game ID gerado para tentar descobrir a senha.
+
+Consulta ao Banco PostgreSQL
+
+Entrar no container:
+
+kubectl exec -it deployment/postgres -- psql -U postgres -d postgres
+
+Listar tabelas:
+
+\dt
+
+Consultar jogos:
+
+SELECT * FROM game;
+
+Sair:
+
+\q
+Monitoramento
+Pods
+kubectl get pods
+Serviços
+kubectl get svc
+Recursos
+kubectl top pods
+Logs
+
+Backend:
+
+kubectl logs deployment/backend
+
+Frontend:
+
+kubectl logs deployment/frontend
+Benefícios da Migração para Kubernetes
+Escalabilidade
+
+O backend pode aumentar ou reduzir automaticamente conforme utilização.
+
+Alta disponibilidade
+
+Múltiplas réplicas do backend permitem continuidade do serviço.
+
+Gerenciamento declarativo
+
+Toda infraestrutura está descrita em YAML.
+
+Portabilidade
+
+O sistema pode ser executado em qualquer cluster Kubernetes compatível.
