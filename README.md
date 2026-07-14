@@ -2,6 +2,10 @@
 
 ## Descrição
 
+Este projeto consiste na implementação do jogo de adivinhação disponibilizado em:
+
+https://github.com/fams/guess_game
+
 Este projeto consiste na migração da aplicação **Guess Game** desenvolvida na atividade anterior utilizando Docker Compose para uma arquitetura baseada em **Kubernetes utilizando k3d**.
 
 A aplicação é composta por:
