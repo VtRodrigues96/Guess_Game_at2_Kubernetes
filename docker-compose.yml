@@ -19,6 +19,9 @@ services:
       retries: 10
 
   backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: guess-game-backend:latest
     restart: always
     depends_on:
