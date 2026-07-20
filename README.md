@@ -1,157 +1,361 @@
-Aqui está um exemplo de um arquivo `README.md` para o seu jogo:
+# Guess Game - Kubernetes (k3d)
+
+## Descrição
+
+Este projeto consiste na implementação do jogo de adivinhação disponibilizado em:
+
+https://github.com/fams/guess_game
+
+Este projeto consiste na migração da aplicação **Guess Game** desenvolvida na atividade anterior utilizando Docker Compose para uma arquitetura baseada em **Kubernetes utilizando k3d**.
+
+A aplicação é composta por:
+
+- Backend Flask (Python)
+- Frontend React servido pelo NGINX
+- Banco PostgreSQL
+- Kubernetes para gerenciamento dos containers
+- HPA para escalabilidade automática do backend
+
+As imagens Docker estão disponíveis no Docker Hub, portanto não é necessário realizar o build das imagens para executar o projeto.
 
 ---
 
-# Jogo de Adivinhação com Flask
+# Arquitetura
 
-Este é um simples jogo de adivinhação desenvolvido utilizando o framework Flask. O jogador deve adivinhar uma senha criada aleatoriamente, e o sistema fornecerá feedback sobre o número de letras corretas e suas respectivas posições.
+```text
+Usuário
+   |
+   |
+NodePort / Port-forward
+   |
+   |
+Frontend React + NGINX
+   |
+   |
+Service Backend
+   |
+   |
+Backend Flask (Pods)
+   |
+   |
+PostgreSQL
+   |
+   |
+Persistent Volume
+```
 
-## Funcionalidades
+---
 
-- Criação de um novo jogo com uma senha fornecida pelo usuário.
-- Adivinhe a senha e receba feedback se as letras estão corretas e/ou em posições corretas.
-- As senhas são armazenadas  utilizando base64.
-- As adivinhações incorretas retornam uma mensagem com dicas.
-  
-## Requisitos
+# Tecnologias Utilizadas
 
-- Python 3.8+ - 3.12
+- Kubernetes
+- k3d
+- Docker
+- Docker Hub
 - Flask
-- Um banco de dados local (ou um mecanismo de armazenamento configurado em `current_app.db`)
-- node 18.17.0
+- React
+- NGINX
+- PostgreSQL
 
-## Instalação
+---
 
-1. Clone o repositório:
+# Imagens Docker
 
-   ```bash
-   git clone https://github.com/fams/guess_game.git
-   cd guess-game
-   ```
+As imagens utilizadas pelo Kubernetes estão publicadas no Docker Hub:
 
-2. Crie um ambiente virtual e ative-o:
+Backend:
 
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   venv\Scripts\activate  # Windows
-   ```
+```text
+vitorrodrigues3794/guess-game-backend:latest
+```
 
-3. Instale as dependências:
+Frontend:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+```text
+vitorrodrigues3794/guess-game-frontend:latest
+```
 
-4. Configure o banco de dados com as variáveis de ambiente no arquivo start-backend.sh
-    1. Para sqlite
+---
 
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="sqlite"            # Use SQLITE
-            export FLASK_DB_PATH="caminho/db.sqlite" # caminho do banco
-        ```
+# Estrutura Kubernetes
 
-    2. Para Postgres
+Os manifestos Kubernetes estão disponíveis no diretório:
 
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="postgres"       # Use postgres
-            export FLASK_DB_USER="postgres"       # Usuário do banco
-            export FLASK_DB_NAME="postgres"       # Nome do Banco
-            export FLASK_DB_PASSWORD="secretpass" # Senha do banco
-            export FLASK_DB_HOST="localhost"      # Hostname
-            export FLASK_DB_PORT="5432"           # Porta
-        ```
+```text
+/k8s
+```
 
-    3. Para DynamoDB
+Estrutura:
 
-        ```bash
-        export FLASK_APP="run.py"
-        export FLASK_DB_TYPE="dynamodb"       # Use postgres
-        export AWS_DEFAULT_REGION="us-east-1" # AWS region
-        export AWS_ACCESS_KEY_ID="FAKEACCESSKEY123456" 
-        export AWS_SECRET_ACCESS_KEY="FakeSecretAccessKey987654321"
-        export AWS_SESSION_TOKEN="FakeSessionTokenABCDEFGHIJKLMNOPQRSTUVXYZ1234567890"
-        ```
+```text
+k8s
+├── backend
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── hpa.yaml
+│
+├── frontend
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+└── postgres
+    ├── deployment.yaml
+    ├── service.yaml
+    └── pvc.yaml
+```
 
-5. Execute o backend
+---
 
-   ```bash
-   ./start-backend.sh &
-   ```
+# Pré-requisitos
 
-6. Cuidado! verifique se o seu linux está lendo o arquivo .sh com fim de linha do windows CRLF. Para verificar utilize o vim -b start-backend.sh
+Instalar:
+
+- Docker
+- kubectl
+- k3d
+
+
+Verificar:
+
+```bash
+docker --version
+
+kubectl version --client
+
+k3d version
+```
+
+---
+
+# Criar Cluster Kubernetes
+
+Criar o cluster k3d:
+
+```bash
+k3d cluster create guess-game
+```
+
+Validar:
+
+```bash
+kubectl get nodes
+```
+
+Resultado esperado:
+
+```text
+k3d-guess-game-server-0   Ready
+```
+
+---
+
+# Deploy da Aplicação
+
+## PostgreSQL
+
+Aplicar os manifestos:
+
+```bash
+kubectl apply -f k8s/postgres/
+```
+
+Validar:
+
+```bash
+kubectl get pods
+kubectl get pvc
+```
+
+O PVC deve estar:
+
+```text
+STATUS: Bound
+```
+
+---
+
+## Backend
+
+Aplicar:
+
+```bash
+kubectl apply -f k8s/backend/
+```
+
+Validar:
+
+```bash
+kubectl get pods
+```
+
+O backend deve possuir inicialmente 2 Pods.
+
+---
 
 ## Frontend
-No diretorio de frontend
 
-1. Instale o node com o nvm. Se não tiver o nvm instalado, siga o [tutorial](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
+Aplicar:
 
-    ```bash
-    nvm install 18.17.0
-    nvm use 18.17.0
-    # Habilite o yarn
-    corepack enable
-    ```
+```bash
+kubectl apply -f k8s/frontend/
+```
 
-2. Instale as dependências do node com o npm:
+Validar:
 
-    ```bash
-    npm install
-    ```
+```bash
+kubectl get pods
+kubectl get svc
+```
 
-3. Exporte a url onde está executando o backend e execute o backend.
+---
 
-   ```bash
-    export REACT_APP_BACKEND_URL=http://localhost:5000
-    yarn start
-   ```
+# Acesso ao Sistema
 
-## Como Jogar
+O frontend está configurado utilizando NodePort.
 
-### 1. Criar um novo jogo
+Verificar:
 
-Acesse a url do frontend http://localhost:3000
+```bash
+kubectl get svc frontend
+```
 
-Digite uma frase secreta
+Exemplo:
 
-Envie
+```text
+frontend   NodePort   80:30080/TCP
+```
 
-Salve o game-id
+Caso esteja utilizando k3d, acessar utilizando:
 
+```bash
+kubectl port-forward service/frontend 8080:80
+```
 
-### 2. Adivinhar a senha
+Abrir no navegador:
 
-Acesse a url do frontend http://localhost:3000
+```
+http://localhost:8080
+```
 
-Vá para o endponint breaker
+---
 
-entre com o game_id que foi gerado pelo Creator
+# Teste da Aplicação
 
-Tente adivinhar
+1. Acessar o frontend.
+2. Criar um novo jogo.
+3. Informar uma senha.
+4. Utilizar o Game ID gerado para realizar tentativas.
 
-## Estrutura do Código
+---
 
-### Rotas:
+# Banco de Dados
 
-- **`/create`**: Cria um novo jogo. Armazena a senha codificada em base64 e retorna um `game_id`.
-- **`/guess/<game_id>`**: Permite ao usuário adivinhar a senha. Compara a adivinhação com a senha armazenada e retorna o resultado.
+Acessar o PostgreSQL:
 
-### Classes Importantes:
+```bash
+kubectl exec -it deployment/postgres -- \
+psql -U postgres -d postgres
+```
 
-- **`Guess`**: Classe responsável por gerenciar a lógica de comparação entre a senha e a tentativa do jogador.
-- **`WrongAttempt`**: Exceção personalizada que é levantada quando a tentativa está incorreta.
+Listar tabelas:
 
+```sql
+\dt
+```
 
+Consultar jogos:
 
-## Melhorias Futuras
+```sql
+SELECT * FROM game;
+```
 
-- Implementar autenticação de usuário para salvar e carregar jogos.
-- Adicionar limite de tentativas.
-- Melhorar a interface de feedback para as tentativas de adivinhação.
+Sair:
 
-## Licença
+```sql
+\q
+```
 
-Este projeto está licenciado sob a [MIT License](LICENSE).
+---
+
+# Auto Scaling (HPA)
+
+O backend possui Horizontal Pod Autoscaler configurado.
+
+Configuração:
+
+```text
+Mínimo de Pods: 2
+Máximo de Pods: 5
+CPU alvo: 70%
+```
+
+Verificar:
+
+```bash
+kubectl get hpa
+```
+
+Exemplo:
+
+```text
+NAME          REFERENCE            TARGETS
+backend-hpa   Deployment/backend   cpu: 20%/70%
+```
+
+Durante aumento de carga, o Kubernetes cria novos Pods automaticamente.
+
+---
+
+# Comandos Úteis
+
+Ver todos os Pods:
+
+```bash
+kubectl get pods
+```
+
+Ver serviços:
+
+```bash
+kubectl get svc
+```
+
+Ver consumo:
+
+```bash
+kubectl top pods
+```
+
+Remover aplicação:
+
+```bash
+kubectl delete -f k8s/
+```
+
+Remover cluster:
+
+```bash
+k3d cluster delete guess-game
+```
+---
+
+# Requisitos Atendidos
+
+| Requisito | Status |
+|-|-|
+| Kubernetes utilizando k3d | ✔ |
+| Aplicação migrada do Docker para Kubernetes | ✔ |
+| Imagens disponíveis no Docker Hub | ✔ |
+| Frontend acessível diretamente | ✔ |
+| NodePort implementado | ✔ |
+| Backend com HPA | ✔ |
+| PostgreSQL com persistência | ✔ |
+| Manifestos dentro da pasta /k8s | ✔ |
+
+---
+
+# Autor
+
+Vitor Rodrigues
+Projeto desenvolvido para a atividade 2 de Kubernetes utilizando o projeto Guess Game.
 
